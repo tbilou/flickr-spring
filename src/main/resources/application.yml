@@ -1,0 +1,12 @@
+api:
+  key:
+  secret:
+
+oauth:
+  token:
+  secret:
+
+queue:
+  flickr:
+    photosets: "queue.flickr.photosets"
+    photos: "queue.flickr.download"
