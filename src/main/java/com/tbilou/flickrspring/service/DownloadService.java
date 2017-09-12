@@ -4,7 +4,9 @@ package com.tbilou.flickrspring.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,13 +20,25 @@ import java.text.MessageFormat;
 @RequiredArgsConstructor
 public class DownloadService {
 
-    public void downloadAndSave(String imageUrl, String filename, String foldername) {
+    @Value("${download.path}")
+    private String path;
+
+    public void downloadAndSave(String imageUrl, String filename, String foldername, String id) {
         InputStream is = null;
+        File targetFile = null;
         try {
-            URL url = new URL(imageUrl);
+
+            final URL url = new URL(imageUrl);
             is = url.openStream();
-            File targetFile = new File(MessageFormat.format("/tmp/{0}/{1}.jpg", foldername, filename));
+            targetFile = new File(MessageFormat.format("{4}/{0}/{1}-{2}.{3}", foldername.replaceAll("[\\/:\"*?<>|]", "_"), filename, id, StringUtils.getFilenameExtension(imageUrl), path));
             targetFile.getParentFile().mkdirs();
+
+            log.debug("Saving to disk: {}", targetFile.getAbsolutePath());
+            // If the file already exists don't download again
+            if (targetFile.exists()) {
+                log.debug("File already exists on disk. NOT Downloading it again");
+                return;
+            }
 
             // Stream the bytes from the web to disk
             java.nio.file.Files.copy(
@@ -33,6 +47,8 @@ public class DownloadService {
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             e.printStackTrace();
+            targetFile.delete();
+            throw new RuntimeException(e.getMessage());
         } finally {
             IOUtils.closeQuietly(is);
         }

@@ -5,7 +5,7 @@
          dynamicConfig="true">
 
     <cache name='flickr'
-           maxEntriesLocalHeap="10"
+           maxEntriesLocalHeap="2000"
            eternal="false"
            timeToLiveSeconds="600">
         <persistence strategy="none"/>

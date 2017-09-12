@@ -1,12 +1,22 @@
 api:
-  key:
-  secret:
+  key: "YOUR KEY HERE"
+  secret: "YOUR SECRET HERE"
 
 oauth:
-  token:
-  secret:
+  token: "YOUR TOKEN HERE"
+  secret: "YOUR SECRET HERE"
+
+download:
+  path: "/tmp/flickr"
 
 queue:
   flickr:
-    photosets: "queue.flickr.photosets"
-    photos: "queue.flickr.download"
+    photosets:
+      photos: "queue.flickr.photosets.photos"
+    download: "queue.flickr.download"
+    context: "queue.flickr.context"
+
+logging:
+  level:
+    com:
+      tbilou: DEBUG

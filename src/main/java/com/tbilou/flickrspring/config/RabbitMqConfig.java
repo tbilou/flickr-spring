@@ -21,21 +21,30 @@ public class RabbitMqConfig {
 
     private final CachingConnectionFactory cachingConnectionFactory;
 
-    @Value("${queue.flickr.photosets}")
-    private String queue;
+    @Value("${queue.flickr.photosets.photos}")
+    private String queuePhotos;
 
-    @Value("${queue.flickr.photos}")
-    private String download;
+    @Value("${queue.flickr.download}")
+    private String queueDownload;
+
+    @Value("${queue.flickr.context}")
+    private String queueContext;
 
     // Queues
+
     @Bean
-    Queue photosetsQueue() {
-        return new Queue(queue, true);
+    Queue photosQueue() {
+        return new Queue(queuePhotos, true);
     }
 
     @Bean
     Queue downloadQueue() {
-        return new Queue(download, true);
+        return new Queue(queueDownload, true);
+    }
+
+    @Bean
+    Queue contextQueue() {
+        return new Queue(queueContext, true);
     }
 
 
