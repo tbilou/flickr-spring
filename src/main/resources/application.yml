@@ -9,6 +9,14 @@ oauth:
 download:
   path: "/tmp/flickr"
 
+listeners:
+  download:
+    enabled: true
+  context:
+    enabled: false
+  photosets:
+    enabled: true
+
 queue:
   flickr:
     photosets:
