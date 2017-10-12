@@ -36,7 +36,8 @@ public class FlickrApiService {
 
     @Cacheable("flickr")
     public JsonObject photosNotInSet(String page) {
-        return JsonPath.read(notInSet(page), "$.photo");
+        String response = notInSet(page);
+        return JsonPath.read(response, "$.photos");
     }
 
     public JsonObject photosRecentlyUpdated(String unixTimestamp, String page) {
@@ -48,7 +49,7 @@ public class FlickrApiService {
     }
 
     public String getPhotos(String id, String page) {
-        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o&photoset_id=%s&page=%s&media=photos", "flickr.photosets.getPhotos", id, page));
+        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o,date_taken&photoset_id=%s&page=%s&media=photos", "flickr.photosets.getPhotos", id, page));
     }
 
     private String recentlyUpdated(String unixTimestamp, String page) {
@@ -56,7 +57,7 @@ public class FlickrApiService {
     }
 
     private String notInSet(String page) {
-        return oAuthTemplate.get(String.format(" https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o&page=%s&media=photos", "flickr.photos.getNotInSet&", page));
+        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o&page=%s&media=photos", "flickr.photos.getNotInSet", page));
     }
 
     public String getAllContexts(String id) {
