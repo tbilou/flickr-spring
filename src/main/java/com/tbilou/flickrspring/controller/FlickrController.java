@@ -2,6 +2,7 @@ package com.tbilou.flickrspring.controller;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.tbilou.flickrspring.service.DownloadService;
 import com.tbilou.flickrspring.service.FlickrService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,24 +21,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @RequestMapping(value = "/flickr/")
 public class FlickrController {
     private final FlickrService flickrService;
-
-    /**
-     * Starts the entire backup process
-     * <p>
-     * Gets the list of sets from flickr and created one message for each set
-     * taking into account if a set has more than 500 photos it creates a message for each page
-     */
-    @RequestMapping(value = "/start",
-            method = RequestMethod.GET,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity photosets() {
-
-        // kickstart the backup process
-        flickrService.getPhotosetsList();
-        flickrService.getPhotosNotInSet();
-
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
+    private final DownloadService downloadService;
 
     /**
      * Allows us to download an entire set.
@@ -91,19 +75,13 @@ public class FlickrController {
 
         // Convert json into an Object
         JsonObject photo = new JsonParser().parse(json).getAsJsonObject();
-        flickrService.downloadPhoto(photo);
+        downloadService.downloadAndSave(
+                photo.get("url").getAsString(),
+                photo.get("title").getAsString(),
+                photo.get("photosetName").getAsString(),
+                photo.get("id").getAsString()
+        );
 
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-    /**
-     * Gets the recentlyUpdated photos
-     */
-    @RequestMapping(value = "/recent",
-            method = RequestMethod.GET,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity recentlyUpdated() {
-        flickrService.recentlyUpdated();
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

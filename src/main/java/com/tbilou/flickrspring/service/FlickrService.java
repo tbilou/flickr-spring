@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
+import com.tbilou.flickrspring.service.flickr.FlickrApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -31,7 +32,6 @@ public class FlickrService {
 
     private static final int PHOTOS_PER_PAGE = 500;
 
-    private final DownloadService downloadService;
     private final FlickrApiService flickrApiService;
     private final RabbitTemplate rabbitTemplate;
     private final CloseableHttpClient httpClient;
@@ -46,42 +46,32 @@ public class FlickrService {
     private String queueContext;
 
 
+    /**
+     * Gets the list of photosets from flickr
+     * There is no pagination needed here because a single
+     * request can return > 1000 sets
+     */
     public void getPhotosetsList() {
-        // Get the Json from Flickr
         JsonArray photosets = flickrApiService.photosetsGetList();
 
         // For each ID request more information
         for (JsonElement p : photosets) {
             JsonObject item = p.getAsJsonObject();
 
-            String title = item.get("title").getAsJsonObject().get("_content").getAsString();
+            final String title = item.get("title").getAsJsonObject().get("_content").getAsString();
+            final String photosetId = item.get("id").getAsString();
             int pages = (int) Math.ceil((double) item.get("photos").getAsInt() / (double) PHOTOS_PER_PAGE);
 
-            sendMessagesToPhotosQueue(item.get("id").getAsString(), pages, title);
+            // if a photoset has more than 500 photos make sure we send one request for each page
+            sendMessagesToPhotosQueue(photosetId, pages, title);
         }
     }
 
-    public void getPagesForPhotoset(String id) {
-        JsonObject photoset = flickrApiService.photosetPages(id);
-        final int pages = photoset.get("pages").getAsInt();
-        String setName = photoset.get("title").getAsString();
-
-        sendMessagesToPhotosQueue(id, pages, setName);
-    }
-
-    private void sendMessagesToPhotosQueue(String id, int pages, String setName) {
-        for (int p = 1; p <= pages; p++) {
-            JsonObject msg = new JsonObject();
-            msg.addProperty("id", id);
-            msg.addProperty("page", p);
-            msg.addProperty("setName", setName);
-            // send message
-            rabbitTemplate.convertAndSend(queuePhotos, msg.toString());
-        }
-    }
-
+    /**
+     *   For each photoset, query flickr to get all the photos for the give page
+     *   We create a json message for each photo in the set and send it to rabbit
+     */
     public void getPhotosInPhotoset(JsonObject photoset) {
-        // call flickr.photosetsGetList.getPhotos
         String info = flickrApiService.getPhotos(photoset.get("id").getAsString(), photoset.get("page").getAsString());
         ReadContext ctx = JsonPath.parse(info);
 
@@ -112,6 +102,25 @@ public class FlickrService {
         log.info("Sending {} messages to elasticsearch", messages.size());
         messages.stream()
                 .forEach(m -> sendToElasticSearch(m));
+    }
+
+    public void getPagesForPhotoset(String id) {
+        JsonObject photoset = flickrApiService.photosetPages(id);
+        final int pages = photoset.get("pages").getAsInt();
+        String setName = photoset.get("title").getAsString();
+
+        sendMessagesToPhotosQueue(id, pages, setName);
+    }
+
+    private void sendMessagesToPhotosQueue(String id, int pages, String setName) {
+        for (int p = 1; p <= pages; p++) {
+            JsonObject msg = new JsonObject();
+            msg.addProperty("id", id);
+            msg.addProperty("page", p);
+            msg.addProperty("setName", setName);
+            // send message
+            rabbitTemplate.convertAndSend(queuePhotos, msg.toString());
+        }
     }
 
     private void sendToElasticSearch(JsonObject m) {
@@ -161,11 +170,6 @@ public class FlickrService {
         messages.stream()
                 .forEach(m -> rabbitTemplate.convertAndSend(queueDownload, m.toString()));
 
-    }
-
-    public void downloadPhoto(JsonObject photo) throws RuntimeException {
-        log.info("Downloading: {} {}", photo.get("url").getAsString(), photo.get("id"));
-        downloadService.downloadAndSave(photo.get("url").getAsString(), photo.get("title").getAsString(), photo.get("photosetName").getAsString(), photo.get("id").getAsString());
     }
 
     public void recentlyUpdated() {

@@ -80,6 +80,40 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- Docker -->
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.22.1</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <showLogs>true</showLogs>
+                    <images>
+                        <image>
+                            <registry>registry.heroku.com/flickrspring/web</registry>
+                            <name>${project.artifactId}:%l</name>
+                            <build>
+                                <dockerFileDir>${project.basedir}/src/main/docker</dockerFileDir>
+                                <assembly>
+                                    <mode>dir</mode>
+                                    <inline xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+                                            xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+                                        <id>${project.name}</id>
+                                        <files>
+                                            <file>
+                                                <source>${project.build.directory}/${project.build.finalName}.jar
+                                                </source>
+                                                <outputDirectory>./</outputDirectory>
+                                                <destName>${project.artifactId}.jar</destName>
+                                            </file>
+                                        </files>
+                                    </inline>
+                                </assembly>
+                            </build>
+                        </image>
+                    </images>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

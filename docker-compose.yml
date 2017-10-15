@@ -1,0 +1,47 @@
+version: "2"
+
+services:
+  flickr:
+    image: flickr-spring:latest
+    container_name: flickr
+    environment:
+      listeners_download_enabled: true
+      listeners_photosets_enabled: true
+      listeners_context_enabled: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "1"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "1"
+
+  elk:
+    image: elk:551
+    container_name: elk
+    ports:
+      - "5044:5044"
+      - "5601:5601"
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      MAX_MAP_COUNT: 262144
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "1"
+    volumes:
+      - /Users/tiago.bilou/Documents/elastic:/var/lib/elastic
+
+

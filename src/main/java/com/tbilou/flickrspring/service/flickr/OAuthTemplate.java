@@ -1,4 +1,4 @@
-package com.tbilou.flickrspring.service;
+package com.tbilou.flickrspring.service.flickr;
 
 import com.github.scribejava.core.model.OAuth1AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
