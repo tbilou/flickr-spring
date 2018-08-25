@@ -7,7 +7,7 @@
     <cache name='flickr'
            maxEntriesLocalHeap="2000"
            eternal="false"
-           timeToLiveSeconds="600">
+           timeToLiveSeconds="6000">
         <persistence strategy="none"/>
     </cache>
 

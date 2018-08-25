@@ -17,13 +17,17 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -44,6 +48,9 @@ public class FlickrService {
 
     @Value("${queue.flickr.context}")
     private String queueContext;
+
+    @Value("${queue.flickr.photosets.add}")
+    private String queueuAddToPhotoset;
 
 
     /**
@@ -68,8 +75,8 @@ public class FlickrService {
     }
 
     /**
-     *   For each photoset, query flickr to get all the photos for the give page
-     *   We create a json message for each photo in the set and send it to rabbit
+     * For each photoset, query flickr to get all the photos for the give page
+     * We create a json message for each photo in the set and send it to rabbit
      */
     public void getPhotosInPhotoset(JsonObject photoset) {
         String info = flickrApiService.getPhotos(photoset.get("id").getAsString(), photoset.get("page").getAsString());
@@ -239,5 +246,135 @@ public class FlickrService {
         rabbitTemplate.convertAndSend(queueDownload, photo.toString());
     }
 
+    public void createPhotosetWithPhotosFromYear(Integer year) {
+        long startSeconds = LocalDateTime.of(year, Month.JANUARY, 1, 0, 0, 0).toEpochSecond(ZoneOffset.UTC);
+        long endSeconds = LocalDateTime.of(year, Month.DECEMBER, 31, 23, 59, 59).toEpochSecond(ZoneOffset.UTC);
 
+        JsonObject photos;
+        int currentPage = 1;
+        String photosetId = "";
+        List<JsonObject> messages = new ArrayList<>();
+        do {
+            photos = flickrApiService.searchPhotos(startSeconds, endSeconds, String.valueOf(currentPage));
+            JsonArray list = photos.get("photo").getAsJsonArray();
+            if (currentPage == 1) {
+                // Create photoset for this year
+                photosetId = flickrApiService.createPhotoset(String.valueOf(year), list.get(0).getAsJsonObject().get("id").getAsString());
+            }
+
+            for (JsonElement photo : list) {
+
+                JsonObject msg = new JsonObject();
+                msg.addProperty("photoId", photo.getAsJsonObject().get("id").getAsString());
+                msg.addProperty("photosetId", photosetId);
+                messages.add(msg);
+            }
+            currentPage++;
+        }
+        while (currentPage <= photos.get("pages").getAsInt());
+
+        log.debug("Found {} photos for year {}", messages.size(), year);
+        messages.stream()
+                .forEach(m -> rabbitTemplate.convertAndSend(queueuAddToPhotoset, m.toString()));
+    }
+
+    public void addPhotoToPhotoset(JsonObject msg) {
+        final String photoId = msg.getAsJsonObject().get("photoId").getAsString();
+        final String photosetId = msg.getAsJsonObject().get("photosetId").getAsString();
+        flickrApiService.addPhotoToPhotoset(photosetId, photoId);
+    }
+
+    public String downloadByYear(Integer input) throws IOException {
+        // Load the json from the file
+        String jsonString = new String (Files.readAllBytes(Paths.get("flickr.json")), Charset.forName("UTF-8"));
+        Gson gson = new Gson();
+        JsonArray list = gson.fromJson(jsonString, JsonArray.class);
+
+        Integer counter = 0;
+
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        for (JsonElement e : list) {
+            String datetaken = e.getAsJsonObject().get("datetaken").getAsString();
+            Integer year = LocalDate.parse(datetaken, formatter).getYear();
+
+            if (year.equals(input) && e.getAsJsonObject().get("media").getAsString().equalsIgnoreCase("photo"))
+            {
+                // Send a message to rabbit
+                JsonObject msg = new JsonObject();
+                msg.addProperty("id", e.getAsJsonObject().get("id").getAsString());
+                msg.addProperty("title", e.getAsJsonObject().get("id").getAsString());
+                msg.addProperty("url", e.getAsJsonObject().get("url_o").getAsString());
+                msg.addProperty("photosetName", year);
+                msg.addProperty("datetaken", e.getAsJsonObject().get("datetaken").getAsString());
+                rabbitTemplate.convertAndSend(queueDownload, msg.toString());
+                counter+=counter+1;
+            }
+        }
+
+
+        return String.valueOf(counter.intValue());
+    }
+
+    public String createFullListOfPhotos() {
+
+        // Get all photos since 1990
+        final String since = "1/1/1990";
+
+        // We need one request to know how many pages there are before using the flux.range
+//        final Mono<List<JsonElement>> list = Flux.range(1, 10)
+//                .map(i -> flickrApiService.photosRecentlyUpdated(since, String.valueOf(i)))
+//                .map(response -> response.getAsJsonObject().get("photo").getAsJsonArray())
+//                .flatMap(l -> {
+//                    List<JsonElement> elements = new ArrayList<>();
+//                    for (JsonElement e : l) {
+//                        elements.add(e);
+//                    }
+//                    return Flux.fromStream(elements.stream());
+//                })
+//                .collectList();
+//        return list.block().toString();
+
+        JsonObject photos;
+        JsonArray list = new JsonArray();
+        int currentPage = 1;
+        do {
+            photos = flickrApiService.photosRecentlyUpdated(since, String.valueOf(currentPage));
+            list.addAll(photos.get("photo").getAsJsonArray());
+            currentPage++;
+        }
+
+//        while (currentPage <= 5);
+        while (currentPage <= photos.get("pages").getAsInt());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        Map<String, Integer> stats = new HashMap<>();
+
+
+        for (JsonElement e : list) {
+//            String id = e.getAsJsonObject().get("id").getAsString();
+//            String url = e.getAsJsonObject().get("url_o").getAsString();
+            String datetaken = e.getAsJsonObject().get("datetaken").getAsString();
+            Integer year = LocalDate.parse(datetaken, formatter).getYear();
+
+            if (year.equals(2000))
+            {
+                // Send a message to rabbit
+                JsonObject msg = new JsonObject();
+                msg.addProperty("id", e.getAsJsonObject().get("id").getAsString());
+                msg.addProperty("title", e.getAsJsonObject().get("id").getAsString());
+                msg.addProperty("url", e.getAsJsonObject().get("url_o").getAsString());
+                msg.addProperty("photosetName", year);
+                msg.addProperty("datetaken", e.getAsJsonObject().get("datetaken").getAsString());
+                rabbitTemplate.convertAndSend(queueDownload, msg.toString());
+
+            }
+            // Count photos per year
+            stats.merge(String.valueOf(year), 1, Integer::sum);
+        }
+
+        return list.toString();
+
+    }
 }

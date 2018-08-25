@@ -7,8 +7,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+
+import java.io.IOException;
 
 @Slf4j
 @Controller
@@ -48,5 +52,20 @@ public class FlickrBackupController {
     public ResponseEntity recentlyUpdated() {
         flickrService.recentlyUpdated();
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/all",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity allPhotos() {
+        final String result = flickrService.createFullListOfPhotos();
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/byYear/{year}")
+    public ResponseEntity getByYear(@PathVariable Integer year) throws IOException {
+        log.info("Downloading photos for year {}", year);
+        final String result = flickrService.downloadByYear(year);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

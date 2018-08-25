@@ -30,6 +30,9 @@ public class RabbitMqConfig {
     @Value("${queue.flickr.context}")
     private String queueContext;
 
+    @Value("${queue.flickr.photosets.add}")
+    private String queueAddToPhotoset;
+
     // Queues
 
     @Bean
@@ -45,6 +48,11 @@ public class RabbitMqConfig {
     @Bean
     Queue contextQueue() {
         return new Queue(queueContext, true);
+    }
+
+    @Bean
+    Queue addToPhotosetQueue() {
+        return new Queue(queueAddToPhotoset, true);
     }
 
 

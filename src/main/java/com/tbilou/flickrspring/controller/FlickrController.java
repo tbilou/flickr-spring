@@ -10,10 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 @Slf4j
 @Controller
@@ -85,4 +87,16 @@ public class FlickrController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    /**
+     *  Create a photoset will all photos for a give year
+     */
+    @RequestMapping(value = "/photosets/{year}",
+            method = RequestMethod.PUT,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity addPhotosToPhotoset(@PathVariable Integer year) {
+
+        flickrService.createPhotosetWithPhotosFromYear(year);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }
