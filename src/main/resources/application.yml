@@ -1,13 +1,17 @@
 api:
-  key: "YOUR KEY HERE"
-  secret: "YOUR SECRET HERE"
+  key: ""
+  secret: ""
 
 oauth:
-  token: "YOUR TOKEN HERE"
-  secret: "YOUR SECRET HERE"
+  token: ""
+  secret: ""
 
 download:
-  path: "/tmp/flickr"
+  path: "path.to/folder"
+
+spring:
+  rabbitmq:
+    addresses: ""
 
 listeners:
   download:
@@ -16,11 +20,14 @@ listeners:
     enabled: false
   photosets:
     enabled: true
+    add:
+      enabled: true
 
 queue:
   flickr:
     photosets:
       photos: "queue.flickr.photosets.photos"
+      add: "queue.flickr.photosets.add"
     download: "queue.flickr.download"
     context: "queue.flickr.context"
 
