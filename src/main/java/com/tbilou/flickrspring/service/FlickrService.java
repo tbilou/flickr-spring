@@ -17,8 +17,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -27,7 +25,9 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 @Slf4j
 @Service
@@ -303,7 +303,7 @@ public class FlickrService {
                 // Send a message to rabbit
                 JsonObject msg = new JsonObject();
                 msg.addProperty("id", e.getAsJsonObject().get("id").getAsString());
-                msg.addProperty("title", e.getAsJsonObject().get("id").getAsString());
+                msg.addProperty("title", e.getAsJsonObject().get("title").getAsString());
                 msg.addProperty("url", e.getAsJsonObject().get("url_o").getAsString());
                 msg.addProperty("photosetName", year);
                 msg.addProperty("datetaken", e.getAsJsonObject().get("datetaken").getAsString());
@@ -347,32 +347,33 @@ public class FlickrService {
 //        while (currentPage <= 5);
         while (currentPage <= photos.get("pages").getAsInt());
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+//
+//        Map<String, Integer> stats = new HashMap<>();
 
-        Map<String, Integer> stats = new HashMap<>();
 
-
-        for (JsonElement e : list) {
-//            String id = e.getAsJsonObject().get("id").getAsString();
-//            String url = e.getAsJsonObject().get("url_o").getAsString();
-            String datetaken = e.getAsJsonObject().get("datetaken").getAsString();
-            Integer year = LocalDate.parse(datetaken, formatter).getYear();
-
-            if (year.equals(2000))
-            {
-                // Send a message to rabbit
-                JsonObject msg = new JsonObject();
-                msg.addProperty("id", e.getAsJsonObject().get("id").getAsString());
-                msg.addProperty("title", e.getAsJsonObject().get("id").getAsString());
-                msg.addProperty("url", e.getAsJsonObject().get("url_o").getAsString());
-                msg.addProperty("photosetName", year);
-                msg.addProperty("datetaken", e.getAsJsonObject().get("datetaken").getAsString());
-                rabbitTemplate.convertAndSend(queueDownload, msg.toString());
-
-            }
-            // Count photos per year
-            stats.merge(String.valueOf(year), 1, Integer::sum);
-        }
+//        for (JsonElement e : list) {
+////            String id = e.getAsJsonObject().get("id").getAsString();
+////            String url = e.getAsJsonObject().get("url_o").getAsString();
+//            String datetaken = e.getAsJsonObject().get("datetaken").getAsString();
+//            Integer year = LocalDate.parse(datetaken, formatter).getYear();
+//
+//            // Photos before 2000 are analogue without exif
+//            if (year.equals(2017))
+//            {
+//                // Send a message to rabbit
+//                JsonObject msg = new JsonObject();
+//                msg.addProperty("id", e.getAsJsonObject().get("id").getAsString());
+//                msg.addProperty("title", e.getAsJsonObject().get("id").getAsString());
+//                msg.addProperty("url", e.getAsJsonObject().get("url_o").getAsString());
+//                msg.addProperty("photosetName", year);
+//                msg.addProperty("datetaken", e.getAsJsonObject().get("datetaken").getAsString());
+//                rabbitTemplate.convertAndSend(queueDownload, msg.toString());
+//
+//            }
+//            // Count photos per year
+//            stats.merge(String.valueOf(year), 1, Integer::sum);
+//        }
 
         return list.toString();
 
