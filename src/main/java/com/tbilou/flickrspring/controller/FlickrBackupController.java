@@ -54,6 +54,11 @@ public class FlickrBackupController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    /**
+     * Use it with curl > flickr.json to create a Json file with all the data from flickr for analysis
+     *
+     * @return
+     */
     @RequestMapping(value = "/all",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -62,6 +67,12 @@ public class FlickrBackupController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
+    /**
+     * Uses the flickr.json from above to get it's photos from
+     * @param year
+     * @return
+     * @throws IOException
+     */
     @GetMapping(value = "/byYear/{year}")
     public ResponseEntity getByYear(@PathVariable Integer year) throws IOException {
         log.info("Downloading photos for year {}", year);

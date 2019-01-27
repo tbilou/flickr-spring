@@ -3,7 +3,6 @@ package com.tbilou.flickrspring.service.flickr;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +66,7 @@ public class FlickrApiService {
     /* ===================================================== */
 
     public String getPhotos(String id, String page) {
-        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o,date_taken&photoset_id=%s&page=%s&media=photos", "flickr.photosets.getPhotos", id, page));
+        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o,date_taken&photoset_id=%s&page=%s&media=all", "flickr.photosets.getPhotos", id, page));
     }
 
     public String getAllContexts(String id) {
@@ -88,11 +87,11 @@ public class FlickrApiService {
     }
 
     private String recentlyUpdated(String unixTimestamp, String page) {
-        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&min_date=%s&extras=%s&per_page=500&page=%s&media=photos", "flickr.photos.recentlyUpdated", unixTimestamp, "url_o%2C+date_taken%2C+date_upload%2C+media", page));
+        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&min_date=%s&extras=%s&per_page=500&page=%s&media=all", "flickr.photos.recentlyUpdated", unixTimestamp, "url_o%2C+date_taken%2C+date_upload%2C+media", page));
     }
 
     private String notInSet(String page) {
-        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o&page=%s&media=photos", "flickr.photos.getNotInSet", page));
+        return oAuthTemplate.get(String.format("https://api.flickr.com/services/rest/?method=%s&format=json&nojsoncallback=1&extras=url_o&page=%s&media=all", "flickr.photos.getNotInSet", page));
     }
 
     private String photosSearch(long min_taken_date, long max_taken_date, String page) {
